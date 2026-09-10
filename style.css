@@ -1,0 +1,144 @@
+/* Custom styles for Denta Care — Background Animation & Sequential Scroll */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #D5EBEF;
+}
+
+/* Full-Screen Background Canvas */
+#canvas-fixed-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #D5EBEF;
+}
+
+#bg-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Minimal Top Preloader Line */
+#progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, #20B8F2, #0077C8, #FF4B12);
+  z-index: 9999;
+  transition: width 0.15s ease-out, opacity 0.5s ease-out;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(32, 184, 242, 0.5);
+}
+
+#progress-bar.loaded {
+  opacity: 0;
+}
+
+/* Hero Section */
+#home {
+  position: relative;
+  width: 100%;
+}
+
+/* Infinite Marquee Animation */
+.marquee-track {
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  width: 100%;
+}
+
+.marquee-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-around;
+  min-width: 100%;
+  animation: scroll-marquee 25s linear infinite;
+}
+
+@keyframes scroll-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.marquee-track:hover .marquee-group {
+  animation-play-state: paused;
+}
+
+/* Floating Badges in Hero */
+.floating-badge-1 {
+  animation: float-1 4.5s ease-in-out infinite;
+}
+
+.floating-badge-2 {
+  animation: float-2 5.5s ease-in-out infinite 1s;
+}
+
+@keyframes float-1 {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes float-2 {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(10px);
+  }
+}
+
+/* Laser Scanner Animation for Flagship Service */
+.laser-scanner-line {
+  animation: laser-scan 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes laser-scan {
+  0% {
+    transform: translateY(-40px);
+  }
+  100% {
+    transform: translateY(50px);
+  }
+}
+
+/* Modern Minimal Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(213, 235, 239, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 165, 233, 0.35);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 165, 233, 0.6);
+}
