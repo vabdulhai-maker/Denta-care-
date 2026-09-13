@@ -43,7 +43,7 @@
   <div id="canvas-fixed-container" class="fixed inset-0 w-screen h-screen pointer-events-none" style="z-index: 0;">
     <canvas id="bg-canvas" class="w-full h-full object-cover"></canvas>
     <!-- Soft Vignette Overlay to blend text legibility -->
-    <div class="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/40 pointer-events-none"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/20 pointer-events-none"></div>
   </div>
 
   <!-- Micro loading line at very top -->
@@ -116,11 +116,11 @@
           EVERY <span class="text-[#0077C8]">SMILE</span><br/>MATTERS.
         </h1>
 
-        <p class="text-base sm:text-lg md:text-xl text-slate-700 mb-8 max-w-xl font-medium leading-relaxed drop-shadow-sm bg-white/50 backdrop-blur-sm px-6 py-2 rounded-2xl border border-white/60">
+        <p class="text-base sm:text-lg md:text-xl text-slate-700 mb-6 max-w-xl font-medium leading-relaxed drop-shadow-sm bg-white/60 backdrop-blur-sm px-6 py-2 rounded-2xl border border-white/60">
           Advanced dentistry designed around your comfort, confidence, and long-term oral health.
         </p>
 
-        <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-10">
+        <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-6">
           <a href="#appointment" class="flex items-center justify-center w-full sm:w-auto gap-2 px-8 py-4 text-sm font-semibold text-white transition-all bg-[#FF4B12] rounded-full hover:bg-[#e03d0a] hover:-translate-y-1 hover:shadow-xl hover:shadow-[#FF4B12]/20">
             BOOK APPOINTMENT
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H7M17 7V17"/></svg>
@@ -131,8 +131,42 @@
           </a>
         </div>
 
+        <!-- INTERACTIVE 3D ANIMATION CONTROLLER BAR -->
+        <div id="animation-controller-bar" class="w-full max-w-2xl px-5 py-3.5 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/90 flex flex-col gap-3 my-3 pointer-events-auto transition-all">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 font-bold text-slate-800">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#20B8F2] animate-pulse"></span>
+              <span class="hidden sm:inline font-heading">3D Hydro-Clean Simulation</span>
+              <span id="frame-counter" class="text-[11px] font-mono font-bold text-[#0077C8] bg-[#DDF6FF] px-2.5 py-0.5 rounded-full">Frame 1/240 • Droplet</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="play-pause-btn" class="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#0077C8] hover:bg-[#005ea0] text-white text-xs font-semibold rounded-full shadow-sm transition-all hover:scale-105 active:scale-95" title="Toggle Auto-Play">
+                <svg id="play-icon" class="w-3.5 h-3.5 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="pause-icon" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                <span id="play-pause-text">Pause</span>
+              </button>
+              <button id="speed-btn" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-full transition-colors" title="Change Playback Speed">1.0x</button>
+            </div>
+          </div>
+
+          <!-- Scrubber Range Slider -->
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] font-bold text-slate-400">0</span>
+            <input id="frame-scrubber" type="range" min="0" max="239" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#20B8F2]">
+            <span class="text-[10px] font-bold text-slate-400">240</span>
+          </div>
+
+          <!-- Key Phase Jump Pills -->
+          <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 text-[11px]">
+            <button class="phase-jump-btn px-2.5 py-1 rounded-lg bg-[#0077C8] text-white font-semibold transition-all hover:scale-105" data-frame="0">💧 1. Droplet</button>
+            <button class="phase-jump-btn px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-[#DDF6FF] hover:text-[#0077C8] font-medium text-slate-600 transition-all hover:scale-105" data-frame="75">🌊 2. Impact</button>
+            <button class="phase-jump-btn px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-[#DDF6FF] hover:text-[#0077C8] font-medium text-slate-600 transition-all hover:scale-105" data-frame="140">👑 3. Hydro Crown</button>
+            <button class="phase-jump-btn px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-[#DDF6FF] hover:text-[#0077C8] font-medium text-slate-600 transition-all hover:scale-105" data-frame="239">✨ 4. Radiant Polish</button>
+          </div>
+        </div>
+
         <!-- Floating Info Pills (Left and Right) -->
-        <div class="hidden lg:flex items-center justify-between w-full max-w-5xl px-4 pointer-events-none">
+        <div class="hidden lg:flex items-center justify-between w-full max-w-5xl px-4 pointer-events-none mt-2">
           <div class="floating-badge-1 px-5 py-3.5 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/80 flex items-center gap-3">
             <div class="w-9 h-9 rounded-full bg-[#DDF6FF] flex items-center justify-center text-[#0077C8]">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>

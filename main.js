@@ -4,17 +4,35 @@
   const ctx = canvas ? canvas.getContext('2d', { alpha: false }) : null;
   const progressBar = document.getElementById('progress-bar');
 
+  // UI Elements
+  const playPauseBtn = document.getElementById('play-pause-btn');
+  const playIcon = document.getElementById('play-icon');
+  const pauseIcon = document.getElementById('pause-icon');
+  const playPauseText = document.getElementById('play-pause-text');
+  const frameScrubber = document.getElementById('frame-scrubber');
+  const frameCounter = document.getElementById('frame-counter');
+  const speedBtn = document.getElementById('speed-btn');
+  const phaseBtns = document.querySelectorAll('.phase-jump-btn');
+
   const images = new Array(TOTAL_FRAMES);
   const isLoaded = new Array(TOTAL_FRAMES).fill(false);
   let loadedCount = 0;
 
+  // Animation state
+  let isPlaying = true;
+  let playbackSpeed = 1.0;
   let currentFrame = 0;
   let targetFrame = 0;
   let lastDrawnIndex = -1;
+  let isUserInteracting = false;
+  let scrollTimeout = null;
+  let lastTime = 0;
+  const FPS = 30;
+  const frameDuration = 1000 / FPS;
 
   function getFramePath(index) {
     const frameNum = String(index + 1).padStart(4, '0');
-    return encodeURI(`upscaled-video_all_frames/frame_${frameNum}.png`);
+    return `upscaled-video_all_frames/frame_${frameNum}.png`;
   }
 
   // Adjust canvas buffer to full viewport with Retina High-DPI support
@@ -56,6 +74,8 @@
     if (index === lastDrawnIndex && !force) return;
 
     const img = images[index];
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+
     const cw = canvas.width;
     const ch = canvas.height;
 
@@ -73,6 +93,47 @@
     lastDrawnIndex = index;
   }
 
+  // Update UI controller elements
+  function updateUI(frame) {
+    const safeFrame = Math.min(Math.max(Math.round(frame), 0), TOTAL_FRAMES - 1);
+    if (frameScrubber && !isUserInteracting) {
+      frameScrubber.value = safeFrame;
+    }
+    if (frameCounter) {
+      let phaseName = 'Droplet';
+      if (safeFrame >= 40 && safeFrame < 110) phaseName = 'Impact Splash';
+      else if (safeFrame >= 110 && safeFrame < 180) phaseName = 'Hydro Crown';
+      else if (safeFrame >= 180) phaseName = 'Radiant Shine';
+
+      frameCounter.textContent = `Frame ${safeFrame + 1}/240 • ${phaseName}`;
+    }
+  }
+
+  // Animation render loop (auto-play + lerp scrubber)
+  function renderLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const delta = timestamp - lastTime;
+
+    if (isPlaying && !isUserInteracting) {
+      if (delta >= (frameDuration / playbackSpeed)) {
+        lastTime = timestamp - (delta % (frameDuration / playbackSpeed));
+        targetFrame = (targetFrame + 1) % TOTAL_FRAMES;
+      }
+    }
+
+    // Smooth lerp towards targetFrame
+    currentFrame += (targetFrame - currentFrame) * 0.22;
+    if (Math.abs(targetFrame - currentFrame) < 0.01) {
+      currentFrame = targetFrame;
+    }
+
+    const frameToDraw = Math.min(Math.max(Math.round(currentFrame), 0), TOTAL_FRAMES - 1);
+    drawFrame(frameToDraw);
+    updateUI(frameToDraw);
+
+    requestAnimationFrame(renderLoop);
+  }
+
   // Calculate target frame naturally based on the entire website scroll
   function updateScroll() {
     const scrollHeight = document.documentElement.scrollHeight;
@@ -81,30 +142,23 @@
     const currentScroll = window.scrollY || window.pageYOffset || 0;
 
     if (maxScroll > 0) {
+      // Pause auto-play while actively scrolling and scrub with scroll
+      isUserInteracting = true;
       const fraction = Math.min(Math.max(currentScroll / maxScroll, 0), 1);
       targetFrame = fraction * (TOTAL_FRAMES - 1);
+
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isUserInteracting = false;
+        lastTime = performance.now();
+      }, 1200);
     }
-  }
-
-  // Animation render loop with smooth Lerp physics
-  function renderLoop() {
-    currentFrame += (targetFrame - currentFrame) * 0.16;
-    
-    if (Math.abs(targetFrame - currentFrame) < 0.005) {
-      currentFrame = targetFrame;
-    }
-
-    const frameToDraw = Math.min(Math.max(Math.round(currentFrame), 0), TOTAL_FRAMES - 1);
-    drawFrame(frameToDraw);
-
-    requestAnimationFrame(renderLoop);
   }
 
   // Preload frame helper
   function loadSingleFrame(i) {
     return new Promise((resolve) => {
       const img = new Image();
-      img.decoding = 'async';
       img.src = getFramePath(i);
       img.onload = () => {
         images[i] = img;
@@ -118,7 +172,7 @@
 
         // Instant paint of frame 0
         if (i === 0 && lastDrawnIndex === -1) {
-          drawFrame(0);
+          drawFrame(0, true);
         }
 
         if (loadedCount === TOTAL_FRAMES && progressBar) {
@@ -137,13 +191,16 @@
 
   // Concurrent batch preloader
   async function preloadAllFrames() {
-    // Frame 0 top priority
-    await loadSingleFrame(0);
-    drawFrame(0);
+    // Top priority first 10 frames
+    for (let i = 0; i < 10; i++) {
+      await loadSingleFrame(i);
+    }
+    drawFrame(0, true);
 
-    const CONCURRENCY = 14;
+    // Load remaining frames with high concurrency
+    const CONCURRENCY = 12;
     const indices = [];
-    for (let i = 1; i < TOTAL_FRAMES; i++) {
+    for (let i = 10; i < TOTAL_FRAMES; i++) {
       indices.push(i);
     }
 
@@ -162,22 +219,79 @@
     await Promise.all(workers);
   }
 
-  // Mobile navigation menu toggle
-  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-  const mobileMenu = document.getElementById('mobile-menu');
-  if (mobileMenuBtn && mobileMenu) {
-    mobileMenuBtn.addEventListener('click', () => {
-      mobileMenu.classList.toggle('hidden');
-      mobileMenu.classList.toggle('flex');
-    });
+  // UI Interactive Controls
+  function setupControls() {
+    // Play/Pause button
+    if (playPauseBtn) {
+      playPauseBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        if (playIcon) playIcon.classList.toggle('hidden', isPlaying);
+        if (pauseIcon) pauseIcon.classList.toggle('hidden', !isPlaying);
+        if (playPauseText) playPauseText.textContent = isPlaying ? 'Pause' : 'Play';
+        if (isPlaying) {
+          isUserInteracting = false;
+          lastTime = performance.now();
+        }
+      });
+    }
 
-    const mobileLinks = document.querySelectorAll('.mobile-nav-link');
-    mobileLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        mobileMenu.classList.add('hidden');
-        mobileMenu.classList.remove('flex');
+    // Scrubber Range Input
+    if (frameScrubber) {
+      frameScrubber.addEventListener('input', (e) => {
+        isUserInteracting = true;
+        targetFrame = parseInt(e.target.value, 10);
+      });
+      frameScrubber.addEventListener('change', () => {
+        setTimeout(() => {
+          isUserInteracting = false;
+          lastTime = performance.now();
+        }, 1000);
+      });
+    }
+
+    // Speed button
+    if (speedBtn) {
+      const speeds = [1.0, 1.5, 2.0, 0.5];
+      let speedIdx = 0;
+      speedBtn.addEventListener('click', () => {
+        speedIdx = (speedIdx + 1) % speeds.length;
+        playbackSpeed = speeds[speedIdx];
+        speedBtn.textContent = playbackSpeed + 'x';
+      });
+    }
+
+    // Phase jump buttons
+    phaseBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const frame = parseInt(btn.getAttribute('data-frame'), 10);
+        if (!isNaN(frame)) {
+          targetFrame = frame;
+          currentFrame = frame;
+          drawFrame(frame, true);
+          updateUI(frame);
+          phaseBtns.forEach(b => b.classList.remove('bg-[#0077C8]', 'text-white'));
+          btn.classList.add('bg-[#0077C8]', 'text-white');
+        }
       });
     });
+
+    // Mobile navigation menu toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+        mobileMenu.classList.toggle('flex');
+      });
+
+      const mobileLinks = document.querySelectorAll('.mobile-nav-link');
+      mobileLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          mobileMenu.classList.add('hidden');
+          mobileMenu.classList.remove('flex');
+        });
+      });
+    }
   }
 
   // Event Listeners
@@ -186,7 +300,7 @@
 
   // Initialize
   resizeCanvas();
-  updateScroll();
+  setupControls();
   preloadAllFrames();
   requestAnimationFrame(renderLoop);
 })();
