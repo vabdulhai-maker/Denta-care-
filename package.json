@@ -1,0 +1,20 @@
+{
+  "name": "denta-care",
+  "version": "1.0.0",
+  "description": "Denta Care — Modern Dentistry & Advanced Technology Interactive 3D Website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "dental",
+    "clinic",
+    "dentistry",
+    "animation",
+    "canvas-scrubbing",
+    "interactive-website"
+  ],
+  "author": "vabdulhai-maker",
+  "license": "ISC"
+}
